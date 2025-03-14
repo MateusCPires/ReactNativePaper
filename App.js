@@ -8,7 +8,6 @@ export default function App() {
     <PaperProvider>
       <View style={styles.container}>
         <ViaCep></ViaCep>
-        <Text>Open up App.js to start working on your app!</Text>
         <StatusBar style="auto" />
       </View>
     </PaperProvider>
