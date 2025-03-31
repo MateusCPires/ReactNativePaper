@@ -11,6 +11,8 @@ const ViaCep = () => {
     const [selectedValue, setSelectedValue] = useState(null);
     const [email, setEmail] = useState("");
     const [visibleDialog, setVisibleDialog] = useState(false);
+    const [visibleCepErrorDialog, setVisibleCepErrorDialog] = useState(false);
+    const [emailError, setEmailError] = useState(false)
 
     const handlePress = () => setExpanded(!expanded);
     
@@ -26,63 +28,55 @@ const ViaCep = () => {
         setEmail('');
     };
 
-    const isValidEmail = (email) => {
-        return email.includes("@");
-    };
-
     const BuscaCep = (cep) => {
         let url = `https://viacep.com.br/ws/${cep}/json/`;
         fetch(url)
             .then((resp) => resp.json())
             .then((dados) => {
-                if (dados.erro) {
-                    Alert.alert('Erro', 'CEP não encontrado!');
-                } else {
-                    console.log(dados);
-                    setDados(dados);
-                    setSelectedValue(dados.uf);
-                }
+                console.log(dados)
+                setDados(dados)
+                setSelectedValue(dados.uf)
             })
             .catch((error) => {
                 console.log("Erro:", error);
-                Alert.alert('Erro', 'Erro ao buscar o CEP');
+                setVisibleCepErrorDialog(true)
             });
     };
 
-    const handleLogin = () => {
-        if (!isValidEmail(email)) {
-            Alert.alert('Erro', 'Por favor, insira um e-mail válido');
-        } else {
-            Alert.alert('Login', 'Login realizado com sucesso!');
-        }
-    };
 
     const handleRegister = () => {
         setVisibleDialog(true);
     };
+    const handleLogin = () => setVisibleDialog(true);
+    const handleRegister = () => setVisibleDialog(true);
 
     return (
-        <Provider>
-            <ScrollView contentContainerStyle={styles.container}>
+        <Provider theme={theme}>
+            <ScrollView style={styles.container}>
                 <Text variant='displaySmall' style={styles.title}>Login</Text>
                 <TextInput
                     label='Nome'
                     mode='outlined'
                     style={styles.input}
+                    left={<TextInput.Icon name="account" />}
                 />
                 <TextInput
                     label='Email'
                     mode='outlined'
                     value={email}
-                    onChangeText={(value) => setEmail(value)}
+                    onChangeText={handleEmailChange}
                     style={styles.input}
                     keyboardType="email-address"
+                    left={<TextInput.Icon name="email" />}
                 />
-                <Button mode="contained" onPress={handleLogin} style={styles.button}>Login</Button>
+                <Button mode="contained" onPress={handleLogin} style={styles.button}>
+                    Login
+                </Button>
 
                 <Text variant='displaySmall' style={[styles.title, { marginTop: 20 }]}>Via CEP Rest</Text>
                 <TextInput
                     label='CEP'
+                    left={<TextInput.Icon icon="map-marker" />}
                     onChangeText={(value) => { setCep(value) }}
                     onBlur={() => { BuscaCep(cep) }}
                     keyboardType='numeric'
@@ -91,6 +85,7 @@ const ViaCep = () => {
                 />
                 <TextInput
                     label='Rua'
+                    left={<TextInput.Icon icon="road" />}
                     value={dados.logradouro == null ? "": dados.logradouro}
                     onChangeText={(value) => {setCep(dados.bairro = value)}}
                     mode='outlined'
@@ -98,6 +93,7 @@ const ViaCep = () => {
                 />
                 <TextInput
                     label='Bairro'
+                    left={<TextInput.Icon icon="city" />}
                     value={dados.bairro == null ? "": dados.bairro}
                     onChangeText={(value) => { setDados({ ...dados, bairro: value }) }}
                     mode='outlined'
@@ -105,6 +101,7 @@ const ViaCep = () => {
                 />
                 <TextInput
                     label='Número'
+                    left={<TextInput.Icon icon="numeric" />}
                     value={dados.unidade  == null ? "": dados.unidade}
                     onChangeText={(value) => { setDados({ ...dados, unidade: value }) }}
                     mode='outlined'
@@ -112,6 +109,7 @@ const ViaCep = () => {
                 />
                 <TextInput
                     label='Complemento'
+                    left={<TextInput.Icon icon="home-plus" />}
                     value={dados.complemento  == null ? "": dados.complemento}
                     onChangeText={(value) => { setDados({ ...dados, complemento: value }) }}
                     mode='outlined'
@@ -119,6 +117,7 @@ const ViaCep = () => {
                 />
                 <TextInput
                     label='Cidade'
+                    left={<TextInput.Icon icon="home-city" />}
                     value={dados.localidade  == null ? "": dados.localidade}
                     onChangeText={(value) => { setDados({ ...dados, localidade: value }) }}
                     mode='outlined'
@@ -128,6 +127,7 @@ const ViaCep = () => {
                 <List.Section title="Estados" style={styles.listSection}>
                     <List.Accordion
                         title={selectedValue == null ? 'Selecione o Estado' : selectedValue}
+                        left={props =><List.Icon icon="map-legend" />}
                         expanded={expanded}
                         onPress={handlePress}
                         style={styles.accordion}>
@@ -140,6 +140,38 @@ const ViaCep = () => {
                 <Button icon="database-check" mode="contained" onPress={handleRegister} style={[styles.button, { marginBottom: 20 }]}>Cadastrar</Button>
             </ScrollView>
 
+            {/* Dialog de Login Falho*/}
+            <Portal>
+            <Dialog 
+                visible={visibleDialog} 
+                onDismiss={() => setVisibleDialog(false)}
+                style={styles.dialog}
+            >
+                <Dialog.Title style={styles.dialogTitle}>Login</Dialog.Title>
+                <Dialog.Content>
+                    <Text style={styles.dialogContent}>Por favor, insira um e-mail válido!</Text>
+                </Dialog.Content>
+                <Dialog.Actions>
+                    <Button 
+                        color="#e74c3c" 
+                        labelStyle={{ fontWeight: '600' }}
+                        onPress={() => { clearForm(); setVisibleDialog(false); }}
+                    >Fechar</Button>
+                </Dialog.Actions>
+            </Dialog>
+            </Portal>
+            {/* Dialog de Login Sucesso*/}
+            <Portal>
+                <Dialog visible={visibleDialog} onDismiss={() => setVisibleDialog(false)}>
+                    <Dialog.Title>Login</Dialog.Title>
+                    <Dialog.Content>
+                        <Text>Login realizado com sucesso!</Text>
+                    </Dialog.Content>
+                    <Dialog.Actions>
+                        <Button onPress={() => { clearForm(); setVisibleDialog(false); }}>Fechar</Button>
+                    </Dialog.Actions>
+                </Dialog>
+            </Portal>
             {/* Dialog de Cadastro */}
             <Portal>
                 <Dialog visible={visibleDialog} onDismiss={() => setVisibleDialog(false)}>
@@ -152,32 +184,96 @@ const ViaCep = () => {
                     </Dialog.Actions>
                 </Dialog>
             </Portal>
+            {/* Dialog de Erro de CEP */}
+            <Portal>
+                <Dialog visible={visibleCepErrorDialog} onDismiss={() => setVisibleCepErrorDialog(false)}>
+                    <Dialog.Title>CEP não encontrado</Dialog.Title>
+                    <Dialog.Content>
+                        <Text>O CEP digitado não foi encontrado. Por favor, verifique e tente novamente.</Text>
+                    </Dialog.Content>
+                    <Dialog.Actions>
+                        <Button onPress={() => setVisibleCepErrorDialog(false)}>Fechar</Button>
+                    </Dialog.Actions>
+                </Dialog>
+            </Portal>
         </Provider>
     );
+};
+
+const theme = {
+    ...DefaultTheme,
+    colors: {
+        ...DefaultTheme.colors,
+        primary: '#3498db',
+        accent: '#f1c40f',
+        background: '#f0f4f7',
+        surface: 'white',
+        text: '#2c3e50',
+        placeholder: '#95a5a6',
+    },
 };
 
 const styles = StyleSheet.create({
     container: {
         padding: 20,
-        backgroundColor: '#f8f8f8',
+        backgroundColor: '#f0f4f7',
         flexGrow: 1,
     },
     title: {
         textAlign: 'center',
-        marginBottom: 10,
-        color: '#333',
+        marginBottom: 20,
+        color: '#2c3e50',
+        fontWeight: '700',
+        letterSpacing: 1,
+        textShadowColor: 'rgba(0,0,0,0.1)',
+        textShadowOffset: {width: 1, height: 1},
+        textShadowRadius: 2,
     },
     input: {
         marginBottom: 15,
+        backgroundColor: 'white',
+        borderRadius: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     button: {
-        marginBottom: 10,
+        marginBottom: 15,
+        borderRadius: 8,
+        paddingVertical: 5,
+        backgroundColor: '#3498db',
+        shadowColor: '#2980b9',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
     },
     listSection: {
         marginBottom: 20,
+        borderRadius: 10,
+        overflow: 'hidden',
+        backgroundColor: 'white',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     accordion: {
-        backgroundColor: '#ffffff',
+        backgroundColor: 'white',
+    },
+    dialog: {
+        borderRadius: 15,
+        backgroundColor: '#f8f9fa',
+    },
+    dialogTitle: {
+        color: '#3498db',
+        fontWeight: '700',
+    },
+    dialogContent: {
+        lineHeight: 24,
+        color: '#2c3e50',
     },
 });
 
